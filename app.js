@@ -6,6 +6,14 @@ $(document).ready( function() {
 		var tags = $(this).find("input[name='tags']").val();
 		getUnanswered(tags);
 	});
+
+	$(".inspiration-getter").submit(function(event) {
+		//zero out results if previous search has run
+		$(".results").html('');
+		//get the value of the tags the user submitted
+		var tagg = $(this).find("input[name='answerers']").val();
+		getInspiration(tagg);
+	});
 });
 
 // this function takes the question object returned by StackOverflow 
@@ -86,6 +94,70 @@ var getUnanswered = function(tags) {
 		var errorElem = showError(error);
 		$('.search-results').append(errorElem);
 	});
+};
+
+var getInspiration = function(tagg) {
+	
+	// the parameters we need to pass in our request to StackOverflow's API
+	var request = {page: 1,
+								site: 'stackoverflow',
+								pagesize: 10,
+								tag: tagg};
+	
+	var result = $.ajax({
+		url: "http://api.stackexchange.com/2.2/tags/"+tagg+"/top-answerers/all_time?",
+		data: request,
+		dataType: "jsonp",
+		type: "GET",
+		})
+	.done(function(result){
+		var searchResults = showSearchResults(request.tag, result.items.length);
+		console.log(result.items);
+		$('.search-results').html(searchResults);
+
+		$.each(result.items, function(i, item) {
+			var inspiration = showInspiration(item);
+			$('.results').append(inspiration);
+
+		});
+	})
+	.fail(function(jqXHR, error, errorThrown){
+		var errorElem = showError(error);
+		$('.search-results').append(errorElem);
+	});
+};
+
+var showInspiration = function(answerer) {
+	
+	// clone our result template code
+	var result = $('.templates .inspiration').clone();
+	
+	// Set display and add link for answerer
+	var displayName = result.find('.name a');
+	displayName.attr('href', answerer.user.link);
+	displayName.text(answerer.user.display_name);
+	
+
+	//display profile image for answerer
+	var image= result.find('.photo');
+	image.css( "background-image", "url('"+answerer.user.profile_image+"')" );
+	image.css( "background-repeat", "no-repeat" );
+	
+	
+
+	// set the accept rate for answerer property in result
+	var acceptRate = result.find('.accept_rate');
+	acceptRate.text(answerer.user.accept_rate);
+
+	// set post count fot the answerer
+	var postCount = result.find('.post_count');
+	postCount.text(answerer.post_count);
+
+	//set score for the answerer
+	var score = result.find('.score');
+	score.text(answerer.score);
+	
+	return result;
 };
 
 
